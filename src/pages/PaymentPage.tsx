@@ -1,5 +1,6 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useToast } from "@/components/ui/use-toast";
 import { 
   Card, CardContent, CardDescription, CardHeader, CardTitle 
@@ -10,12 +11,20 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import PaymentSummary from "@/components/PaymentSummary";
 import PaymentSuccess from "@/components/PaymentSuccess";
 import PaymentCard from "@/components/PaymentCard";
+import LoggedInUser from "@/components/LoggedInUser";
 import { initiatePayment, PaymentOptions } from "@/services/razorpay";
 import { CreditCard, Wallet, Banknote } from "lucide-react";
 import { formatCurrency } from "@/lib/formatters";
 
+interface UserData {
+  name: string;
+  email: string;
+  phone?: string;
+}
+
 const PaymentPage = () => {
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [amount, setAmount] = useState<number>(1000);
   const [loading, setLoading] = useState<boolean>(false);
   const [paymentSuccess, setPaymentSuccess] = useState<boolean>(false);
@@ -24,6 +33,23 @@ const PaymentPage = () => {
   const [email, setEmail] = useState<string>('');
   const [phone, setPhone] = useState<string>('');
   const [name, setName] = useState<string>('');
+
+  useEffect(() => {
+    // Check if user is logged in
+    const storedUser = localStorage.getItem('demoUser');
+    if (!storedUser) {
+      navigate('/login');
+      return;
+    }
+
+    // Pre-fill user data from localStorage
+    const userData: UserData = JSON.parse(storedUser);
+    setName(userData.name);
+    setEmail(userData.email);
+    if (userData.phone) {
+      setPhone(userData.phone);
+    }
+  }, [navigate]);
 
   const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = parseFloat(e.target.value);
@@ -88,9 +114,6 @@ const PaymentPage = () => {
     setPaymentSuccess(false);
     setPaymentId('');
     setAmount(1000);
-    setEmail('');
-    setPhone('');
-    setName('');
   };
 
   if (paymentSuccess) {
@@ -112,106 +135,115 @@ const PaymentPage = () => {
   return (
     <div className="min-h-screen flex flex-col md:flex-row items-center justify-center bg-gray-50 p-4 md:p-8">
       <div className="w-full max-w-4xl flex flex-col md:flex-row gap-6">
-        <Card className="flex-1 border border-border">
-          <CardHeader className="space-y-1">
-            <CardTitle className="text-2xl font-bold">Pay Swift</CardTitle>
-            <CardDescription>
-              Enter your details to complete the payment
-            </CardDescription>
-          </CardHeader>
-          
-          <CardContent className="space-y-6">
-            <div className="space-y-2">
-              <Label htmlFor="amount">Amount</Label>
-              <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">₹</span>
+        <div className="flex flex-col flex-1">
+          <LoggedInUser />
+          <Card className="flex-1 border border-border">
+            <CardHeader className="space-y-1">
+              <CardTitle className="text-2xl font-bold">Pay Swift</CardTitle>
+              <CardDescription>
+                Enter payment details to complete the transaction
+              </CardDescription>
+            </CardHeader>
+            
+            <CardContent className="space-y-6">
+              <div className="space-y-2">
+                <Label htmlFor="amount">Amount</Label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">₹</span>
+                  <Input 
+                    id="amount"
+                    type="number"
+                    value={amount || ''}
+                    onChange={handleAmountChange}
+                    className="pl-8"
+                    placeholder="Enter amount"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="name">Name</Label>
                 <Input 
-                  id="amount"
-                  type="number"
-                  value={amount || ''}
-                  onChange={handleAmountChange}
-                  className="pl-8"
-                  placeholder="Enter amount"
+                  id="name"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="Enter your name"
+                  readOnly
+                  className="bg-gray-50"
                 />
               </div>
-            </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="name">Name</Label>
-              <Input 
-                id="name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Enter your name"
-              />
-            </div>
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <Input 
+                  id="email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="Enter your email"
+                  readOnly
+                  className="bg-gray-50"
+                />
+              </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input 
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="Enter your email"
-              />
-            </div>
+              <div className="space-y-2">
+                <Label htmlFor="phone">Phone</Label>
+                <Input 
+                  id="phone"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  placeholder="Enter your phone number"
+                  readOnly
+                  className="bg-gray-50"
+                />
+              </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="phone">Phone (optional)</Label>
-              <Input 
-                id="phone"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                placeholder="Enter your phone number"
-              />
-            </div>
-
-            <Tabs defaultValue="card" value={paymentMethod} onValueChange={setPaymentMethod}>
-              <TabsList className="grid grid-cols-3 w-full">
-                <TabsTrigger value="card">Card</TabsTrigger>
-                <TabsTrigger value="upi">UPI</TabsTrigger>
-                <TabsTrigger value="bank">Banking</TabsTrigger>
-              </TabsList>
-              
-              <TabsContent value="card" className="space-y-4 pt-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <PaymentCard
-                    title="Credit Card"
-                    description="Pay with Visa, Mastercard, or RuPay"
-                    icon={CreditCard}
-                    amount="No extra fees"
-                    selected={true}
-                  />
-                </div>
-              </TabsContent>
-              
-              <TabsContent value="upi" className="space-y-4 pt-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <PaymentCard
-                    title="UPI"
-                    description="Pay with any UPI app"
-                    icon={Wallet}
-                    amount="Instant transfer"
-                    selected={true}
-                  />
-                </div>
-              </TabsContent>
-              
-              <TabsContent value="bank" className="space-y-4 pt-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <PaymentCard
-                    title="Net Banking"
-                    description="Pay with your bank account"
-                    icon={Banknote}
-                    amount="All banks supported"
-                    selected={true}
-                  />
-                </div>
-              </TabsContent>
-            </Tabs>
-          </CardContent>
-        </Card>
+              <Tabs defaultValue="card" value={paymentMethod} onValueChange={setPaymentMethod}>
+                <TabsList className="grid grid-cols-3 w-full">
+                  <TabsTrigger value="card">Card</TabsTrigger>
+                  <TabsTrigger value="upi">UPI</TabsTrigger>
+                  <TabsTrigger value="bank">Banking</TabsTrigger>
+                </TabsList>
+                
+                <TabsContent value="card" className="space-y-4 pt-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <PaymentCard
+                      title="Credit Card"
+                      description="Pay with Visa, Mastercard, or RuPay"
+                      icon={CreditCard}
+                      amount="No extra fees"
+                      selected={true}
+                    />
+                  </div>
+                </TabsContent>
+                
+                <TabsContent value="upi" className="space-y-4 pt-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <PaymentCard
+                      title="UPI"
+                      description="Pay with any UPI app"
+                      icon={Wallet}
+                      amount="Instant transfer"
+                      selected={true}
+                    />
+                  </div>
+                </TabsContent>
+                
+                <TabsContent value="bank" className="space-y-4 pt-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <PaymentCard
+                      title="Net Banking"
+                      description="Pay with your bank account"
+                      icon={Banknote}
+                      amount="All banks supported"
+                      selected={true}
+                    />
+                  </div>
+                </TabsContent>
+              </Tabs>
+            </CardContent>
+          </Card>
+        </div>
         
         <div className="w-full md:w-80">
           <PaymentSummary 

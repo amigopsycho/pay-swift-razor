@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from "@/components/ui/use-toast";
@@ -91,11 +90,20 @@ const PaymentPage = () => {
       const response = await initiatePayment(paymentOptions);
       
       if (response && response.razorpay_payment_id) {
-        setPaymentId(response.razorpay_payment_id);
-        setPaymentSuccess(true);
         toast({
           title: "Payment Successful",
           description: `Your payment of ${formatCurrency(amount)} has been completed`,
+        });
+        
+        // Navigate to success page with payment details
+        navigate('/payment-success', {
+          state: {
+            paymentData: {
+              amount: amount,
+              paymentId: response.razorpay_payment_id,
+              currency: 'INR'
+            }
+          }
         });
       }
     } catch (error) {

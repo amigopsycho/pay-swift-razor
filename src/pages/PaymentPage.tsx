@@ -1,85 +1,37 @@
-import React, { useState, useEffect } from 'react';
+
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from "@/components/ui/use-toast";
 import { 
   Card, CardContent, CardDescription, CardHeader, CardTitle 
 } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import PaymentSummary from "@/components/PaymentSummary";
-import PaymentSuccess from "@/components/PaymentSuccess";
 import PaymentCard from "@/components/PaymentCard";
-import LoggedInUser from "@/components/LoggedInUser";
 import { initiatePayment, PaymentOptions } from "@/services/razorpay";
 import { CreditCard, Wallet, Banknote } from "lucide-react";
 import { formatCurrency } from "@/lib/formatters";
 
-interface UserData {
-  name: string;
-  email: string;
-  phone?: string;
-}
+const FIXED_AMOUNT = 1999;
 
 const PaymentPage = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
-  const [amount, setAmount] = useState<number>(1000);
   const [loading, setLoading] = useState<boolean>(false);
-  const [paymentSuccess, setPaymentSuccess] = useState<boolean>(false);
-  const [paymentId, setPaymentId] = useState<string>('');
   const [paymentMethod, setPaymentMethod] = useState<string>('card');
-  const [email, setEmail] = useState<string>('');
-  const [phone, setPhone] = useState<string>('');
-  const [name, setName] = useState<string>('');
-
-  useEffect(() => {
-    // Check if user is logged in
-    const storedUser = localStorage.getItem('demoUser');
-    if (!storedUser) {
-      navigate('/login');
-      return;
-    }
-
-    // Pre-fill user data from localStorage
-    const userData: UserData = JSON.parse(storedUser);
-    setName(userData.name);
-    setEmail(userData.email);
-    if (userData.phone) {
-      setPhone(userData.phone);
-    }
-  }, [navigate]);
-
-  const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = parseFloat(e.target.value);
-    setAmount(isNaN(value) ? 0 : value);
-  };
+  
+  // Default demo user info
+  const name = "Demo User";
+  const email = "demo@example.com";
+  const phone = "9876543210";
 
   const handlePayment = async () => {
-    if (amount <= 0) {
-      toast({
-        title: "Invalid amount",
-        description: "Please enter a valid payment amount",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (!name || !email) {
-      toast({
-        title: "Missing information",
-        description: "Please provide your name and email",
-        variant: "destructive",
-      });
-      return;
-    }
-    
     setLoading(true);
     try {
       const paymentOptions: PaymentOptions = {
-        amount: amount,
-        name: "Pay Swift",
-        description: `Payment of ${formatCurrency(amount)}`,
+        amount: FIXED_AMOUNT,
+        name: "Pay Swift Premium Package",
+        description: `Payment of ${formatCurrency(FIXED_AMOUNT)}`,
         email: email,
         contact: phone,
         notes: {
@@ -92,14 +44,14 @@ const PaymentPage = () => {
       if (response && response.razorpay_payment_id) {
         toast({
           title: "Payment Successful",
-          description: `Your payment of ${formatCurrency(amount)} has been completed`,
+          description: `Your payment of ${formatCurrency(FIXED_AMOUNT)} has been completed`,
         });
         
         // Navigate to success page with payment details
         navigate('/payment-success', {
           state: {
             paymentData: {
-              amount: amount,
+              amount: FIXED_AMOUNT,
               paymentId: response.razorpay_payment_id,
               currency: 'INR'
             }
@@ -118,94 +70,25 @@ const PaymentPage = () => {
     }
   };
 
-  const resetPayment = () => {
-    setPaymentSuccess(false);
-    setPaymentId('');
-    setAmount(1000);
-  };
-
-  if (paymentSuccess) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-        <Card className="w-full max-w-md">
-          <CardContent className="pt-6">
-            <PaymentSuccess 
-              amount={amount} 
-              paymentId={paymentId} 
-              onContinue={resetPayment} 
-            />
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen flex flex-col md:flex-row items-center justify-center bg-gray-50 p-4 md:p-8">
       <div className="w-full max-w-4xl flex flex-col md:flex-row gap-6">
         <div className="flex flex-col flex-1">
-          <LoggedInUser />
-          <Card className="flex-1 border border-border">
+          <Card className="flex-1 border border-border mb-6">
             <CardHeader className="space-y-1">
-              <CardTitle className="text-2xl font-bold">Pay Swift</CardTitle>
+              <CardTitle className="text-2xl font-bold">Premium Package</CardTitle>
               <CardDescription>
-                Enter payment details to complete the transaction
+                Complete your payment to access all features
               </CardDescription>
             </CardHeader>
             
             <CardContent className="space-y-6">
-              <div className="space-y-2">
-                <Label htmlFor="amount">Amount</Label>
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">₹</span>
-                  <Input 
-                    id="amount"
-                    type="number"
-                    value={amount || ''}
-                    onChange={handleAmountChange}
-                    className="pl-8"
-                    placeholder="Enter amount"
-                  />
-                </div>
+              <div className="p-4 bg-gray-50 rounded-lg border border-gray-200 mb-4">
+                <p className="text-sm text-gray-500 mb-1">Amount</p>
+                <p className="text-2xl font-bold">{formatCurrency(FIXED_AMOUNT)}</p>
+                <p className="text-xs text-gray-400 mt-1">One-time payment</p>
               </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="name">Name</Label>
-                <Input 
-                  id="name"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="Enter your name"
-                  readOnly
-                  className="bg-gray-50"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input 
-                  id="email"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="Enter your email"
-                  readOnly
-                  className="bg-gray-50"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="phone">Phone</Label>
-                <Input 
-                  id="phone"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  placeholder="Enter your phone number"
-                  readOnly
-                  className="bg-gray-50"
-                />
-              </div>
-
+              
               <Tabs defaultValue="card" value={paymentMethod} onValueChange={setPaymentMethod}>
                 <TabsList className="grid grid-cols-3 w-full">
                   <TabsTrigger value="card">Card</TabsTrigger>
@@ -255,7 +138,7 @@ const PaymentPage = () => {
         
         <div className="w-full md:w-80">
           <PaymentSummary 
-            amount={amount} 
+            amount={FIXED_AMOUNT} 
             onProceed={handlePayment}
             loading={loading}
           />

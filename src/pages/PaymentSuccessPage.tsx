@@ -47,7 +47,21 @@ const PaymentSuccessPage = () => {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
+    <div className="min-h-screen flex flex-col items-center bg-gray-50 px-4 py-8">
+      <div className="w-full max-w-4xl mb-8">
+        <div className="bg-green-50 border-l-4 border-green-400 p-6 rounded-lg shadow-md animate-fade-in">
+          <div className="flex items-center">
+            <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center mr-4">
+              <Check className="w-5 h-5 text-green-500" />
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold text-green-800">Payment Successful!</h3>
+              <p className="text-green-600">Your purchase was completed successfully.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      
       <Card className="w-full max-w-md">
         <CardContent className="pt-6">
           <div className="flex flex-col items-center justify-center p-6 animate-fade-in">

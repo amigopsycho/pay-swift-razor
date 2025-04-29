@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useToast } from "@/components/ui/use-toast";
+import { toast } from "sonner";
 import { 
   Card, CardContent, CardDescription, CardHeader, CardTitle 
 } from "@/components/ui/card";
@@ -9,16 +9,18 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import PaymentSummary from "@/components/PaymentSummary";
 import PaymentCard from "@/components/PaymentCard";
 import { initiatePayment, PaymentOptions } from "@/services/razorpay";
-import { CreditCard, Wallet, Banknote } from "lucide-react";
+import { CreditCard, Wallet, Banknote, Check, Home } from "lucide-react";
 import { formatCurrency } from "@/lib/formatters";
+import { Button } from "@/components/ui/button";
 
 const FIXED_AMOUNT = 1999;
 
 const PaymentPage = () => {
-  const { toast } = useToast();
   const navigate = useNavigate();
   const [loading, setLoading] = useState<boolean>(false);
   const [paymentMethod, setPaymentMethod] = useState<string>('card');
+  const [paymentSuccess, setPaymentSuccess] = useState<boolean>(false);
+  const [paymentId, setPaymentId] = useState<string>('');
   
   // Default demo user info
   const name = "Demo User";
@@ -42,33 +44,79 @@ const PaymentPage = () => {
       const response = await initiatePayment(paymentOptions);
       
       if (response && response.razorpay_payment_id) {
-        toast({
-          title: "Payment Successful",
+        toast.success("Payment successful!", {
           description: `Your payment of ${formatCurrency(FIXED_AMOUNT)} has been completed`,
         });
         
-        // Navigate to success page with payment details
-        navigate('/payment-success', {
-          state: {
-            paymentData: {
-              amount: FIXED_AMOUNT,
-              paymentId: response.razorpay_payment_id,
-              currency: 'INR'
-            }
-          }
-        });
+        setPaymentSuccess(true);
+        setPaymentId(response.razorpay_payment_id);
       }
     } catch (error) {
       console.error("Payment failed:", error);
-      toast({
-        title: "Payment Failed",
+      toast.error("Payment Failed", {
         description: "There was an error processing your payment. Please try again.",
-        variant: "destructive",
       });
     } finally {
       setLoading(false);
     }
   };
+
+  const handleGoHome = () => {
+    navigate('/');
+  };
+
+  if (paymentSuccess) {
+    return (
+      <div className="min-h-screen flex flex-col items-center bg-gray-50 px-4 py-8">
+        <div className="w-full max-w-4xl mb-8">
+          <div className="bg-green-50 border-l-4 border-green-400 p-6 rounded-lg shadow-md animate-fade-in">
+            <div className="flex items-center">
+              <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center mr-4">
+                <Check className="w-5 h-5 text-green-500" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-green-800">Payment Successful!</h3>
+                <p className="text-green-600">Your purchase was completed successfully.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <Card className="w-full max-w-md">
+          <CardContent className="pt-6">
+            <div className="flex flex-col items-center justify-center p-6 animate-fade-in">
+              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-6">
+                <Check className="w-8 h-8 text-green-500" />
+              </div>
+              
+              <h2 className="text-2xl font-bold mb-2">Payment Successful!</h2>
+              <p className="text-gray-500 mb-6 text-center">
+                Your payment of {formatCurrency(FIXED_AMOUNT)} has been successfully processed.
+              </p>
+              
+              {paymentId && (
+                <div className="bg-gray-50 p-4 rounded-lg w-full mb-6">
+                  <p className="text-xs text-gray-500 mb-1">Payment Reference</p>
+                  <p className="text-sm font-medium break-all">{paymentId}</p>
+                </div>
+              )}
+              
+              <Button 
+                onClick={handleGoHome}
+                className="w-full bg-payment-primary hover:bg-payment-secondary"
+              >
+                <Home className="mr-2 h-4 w-4" /> Return to Home
+              </Button>
+              
+              <p className="text-xs text-gray-400 mt-6 text-center">
+                A confirmation has been sent to your email address.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col md:flex-row items-center justify-center bg-gray-50 p-4 md:p-8">
